@@ -29,6 +29,7 @@ extern "C" void gaussian_blur(
 
     const int stride = width * channels;
 
+    #pragma omp parallel for
     for (int y = 1; y < height - 1; ++y) {
         const int row_offset = y * stride;
 
