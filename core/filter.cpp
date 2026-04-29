@@ -28,27 +28,25 @@ void gaussian_blur(
     std::memcpy(output, input, static_cast<size_t>(size));
   }
 
-  const int kernel[3][3] = {
-    {1, 2, 1},
-    {2, 4, 2},
-    {1, 2, 1}
-  };
+  const int stride = width * channels;
 
   for (int y = 1; y < height - 1; ++y) {
-    for (int x = 1; x < width - 1; ++x) {
-      for (int c = 0; c < channels; ++c) {
-        int sum = 0;
+    const int row_begin = y * stride + channels;
+    const int row_end = y * stride + (width - 1) * channels;
 
-        for (int dy = -1; dy <= 1; ++dy) {
-          for (int dx = -1; dx <= 1; ++dx) {
-            const int source_index = ((y + dy) * width + (x + dx)) * channels + c;
-            sum += input[source_index] * kernel[dy + 1][dx + 1];
-          }
-        }
+    for (int i = row_begin; i < row_end; ++i) {
+      const int sum =
+        input[i - stride - channels] +
+        2 * input[i - stride] +
+        input[i - stride + channels] +
+        2 * input[i - channels] +
+        4 * input[i] +
+        2 * input[i + channels] +
+        input[i + stride - channels] +
+        2 * input[i + stride] +
+        input[i + stride + channels];
 
-        const int target_index = (y * width + x) * channels + c;
-        output[target_index] = static_cast<unsigned char>(sum / 16);
-      }
+      output[i] = static_cast<unsigned char>(sum / 16);
     }
   }
 }

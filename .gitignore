@@ -1,6 +1,7 @@
 .clangd
 benchmark_o0
 benchmark_o2
+benchmark_o3
 settings.json
 __pycache__/
 libfilter.so
