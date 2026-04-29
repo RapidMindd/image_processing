@@ -1,52 +1,47 @@
 #include "filter.h"
-
 #include <algorithm>
 #include <cstring>
+#include <cstdlib>
 
-void gaussian_blur(
-  unsigned char *input,
-  unsigned char *output,
+constexpr size_t ALIGNMENT = 32;
+
+extern "C" void gaussian_blur(
+  unsigned char * __restrict__ input,
+  unsigned char * __restrict__ output,
   int width,
   int height
 )
 {
-  const int channels = 3;
-
-  if (input == nullptr || output == nullptr || width <= 0 || height <= 0) {
-    return;
-  }
-
-  const int size = width * height * channels;
-  if (width < 3 || height < 3) {
-    if (input != output) {
-      std::memcpy(output, input, static_cast<size_t>(size));
+    if (input == nullptr || output == nullptr || width <= 0 || height <= 0) {
+        return;
     }
-    return;
-  }
 
-  if (input != output) {
-    std::memcpy(output, input, static_cast<size_t>(size));
-  }
+    const int channels = 3;
+    const size_t size = static_cast<size_t>(width) * height * channels;
 
-  const int stride = width * channels;
-
-  for (int y = 1; y < height - 1; ++y) {
-    const int row_begin = y * stride + channels;
-    const int row_end = y * stride + (width - 1) * channels;
-
-    for (int i = row_begin; i < row_end; ++i) {
-      const int sum =
-        input[i - stride - channels] +
-        2 * input[i - stride] +
-        input[i - stride + channels] +
-        2 * input[i - channels] +
-        4 * input[i] +
-        2 * input[i + channels] +
-        input[i + stride - channels] +
-        2 * input[i + stride] +
-        input[i + stride + channels];
-
-      output[i] = static_cast<unsigned char>(sum / 16);
+    if (width < 3 || height < 3) {
+        if (input != output) std::memcpy(output, input, size);
+        return;
     }
-  }
+
+    unsigned char* __restrict__ p_in = (unsigned char*)__builtin_assume_aligned(input, ALIGNMENT);
+    unsigned char* __restrict__ p_out = (unsigned char*)__builtin_assume_aligned(output, ALIGNMENT);
+
+    const int stride = width * channels;
+
+    for (int y = 1; y < height - 1; ++y) {
+        const int row_offset = y * stride;
+
+        for (int i = channels; i < stride - channels; ++i) {
+            const int idx = row_offset + i;
+            const int sum =
+                p_in[idx - stride - channels] + 2 * p_in[idx - stride]
+                + p_in[idx - stride + channels] + 2 * p_in[idx - channels]
+                + 4 * p_in[idx] + 2 * p_in[idx + channels]
+                + p_in[idx + stride - channels] + 2 * p_in[idx + stride]
+                + p_in[idx + stride + channels];
+
+            p_out[idx] = static_cast<unsigned char>(sum >> 4);
+        }
+    }
 }
