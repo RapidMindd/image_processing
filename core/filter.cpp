@@ -19,12 +19,17 @@ extern "C" void gaussian_blur(
     const int channels = 3;
     const size_t size = static_cast<size_t>(width) * height * channels;
 
+    unsigned char* aligned_in = static_cast<unsigned char*>(std::aligned_alloc(ALIGNMENT, size));
+    if (!aligned_in) return;
+
+    std::memcpy(aligned_in, input, size);
+
     if (width < 3 || height < 3) {
         if (input != output) std::memcpy(output, input, size);
         return;
     }
 
-    unsigned char* __restrict__ p_in = (unsigned char*)__builtin_assume_aligned(input, ALIGNMENT);
+    unsigned char* __restrict__ p_in = (unsigned char*)__builtin_assume_aligned(aligned_in, ALIGNMENT);
     unsigned char* __restrict__ p_out = (unsigned char*)__builtin_assume_aligned(output, ALIGNMENT);
 
     const int stride = width * channels;
@@ -33,6 +38,7 @@ extern "C" void gaussian_blur(
     for (int y = 1; y < height - 1; ++y) {
         const int row_offset = y * stride;
 
+        #pragma omp simd
         for (int i = channels; i < stride - channels; ++i) {
             const int idx = row_offset + i;
             const int sum =

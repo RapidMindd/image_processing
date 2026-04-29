@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -std=c++14 -Wall -Wextra -pedantic
+CXXFLAGS = -std=c++17 -Wall -Wextra -pedantic
 UNAME_S := $(shell uname -s)
 
 ifeq ($(UNAME_S),Darwin)
